@@ -94,7 +94,7 @@ function tile(p: number, moves: number[], threat: Set<number>) {
   return `<button data-tile="${p}" class="tile t-${t === "." ? "road" : t === "~" ? "water" : t} ${moves.includes(p) ? "reachable" : ""} ${danger && threat.has(p) ? "danger" : ""} ${u?.id === state.selected ? "selected" : ""} ${pvw ? "attackable" : ""}" aria-label="Tile ${(p % 8) + 1},${Math.floor(p / 8) + 1}, ${terrainNames[t]}${beacon ? `, ${state.lit.includes(p) ? "lit" : "unlit"} beacon` : ""}${u ? `, ${u.name}, ${u.hp} HP` : ""}"><span class="terrain-art">${t === "f" ? "♠" : t === "r" ? "▥" : t === "s" ? "✧" : t === "~" ? "≈" : ""}</span>${beacon ? `<span class="beacon ${state.lit.includes(p) ? "lit" : ""}">♜</span>` : ""}${u ? `<span class="token ${u.team} ${u.acted ? "spent" : ""}">${portrait(u)}<b>${weapons[u.weapon]}</b><i style="--hp:${(100 * u.hp) / u.maxHp}%"></i></span>` : ""}<span class="coordinate">${String.fromCharCode(65 + (p % 8))}${Math.floor(p / 8) + 1}</span></button>`;
 }
 function panel() {
-  const u = state.units.find((u) => u.id === (state.selected ?? inspected));
+  const u = state.units.find((u) => u.id === (inspected ?? state.selected));
   if (!u)
     return `<div class="panel-label">FIELD NOTES</div><h2>Keep the light close.</h2><p>Select a keeper, then a highlighted square to move. Click an enemy to preview a strike.</p><div class="rule-card"><strong>Formation matters</strong><p>Adjacent allies grant +1 power and +1 defense. Shared attacks grow their bond; rank II grants +2 power.</p></div><div class="rule-card"><strong>Know your weapon</strong><p>Blade → Axe → Lance → Blade.<br>Advantage shifts power by 2. Bow strikes at exactly 2 tiles.</p></div><p class="muted">A move is provisional until an action. Cancel returns to the starting square.</p>`;
   const p = target ? preview(state, u.id, target) : null;
@@ -124,11 +124,13 @@ function panel() {
                 .join("")
             : ""
         }${button("Wait", "wait")}${button(state.origin !== null ? "Undo move & cancel" : "Cancel selection", "cancel")}</div><small class="muted">Click an enemy in range for its exact combat preview.</small>`
-      : ""
+      : u.team === "enemy" && state.selected
+        ? button("Back to orders", "back")
+        : ""
   }`;
 }
 function helpContent() {
-  return `<div class="overlay"><section class="dialog help"><div class="eyebrow">KEEPER’S HANDBOOK</div><h2>One lantern. Four keepers.</h2><p>Move once, then attack, heal, guard, wait, or light a beacon. You can act without moving. Cancel / Escape undoes a move until an action commits it. End round sends the Hollow forward; enemy actions resolve after the phase banner.</p><p><b>Terrain:</b> Forest costs 2 movement and adds 2 defense. Ruins add 1 defense. Water blocks movement. Shrines restore 5 HP at the next allied round. Units block passage. Bow range is exactly 2; all other attacks have range 1. Ione heals up to 9 HP within 2 tiles.</p><p><b>Bonds:</b> Any adjacent living ally grants +1 attack and +1 defense. Each supported attack adds 1 bond point. Rank I at 2 points, rank II at 4; rank II adds another point of attack. Benefits do not stack with multiple allies.</p><p><b>Growth:</b> Attacks earn 10 XP, kills 20, heals 10, beacons 15. Every 30 XP grants +2 maximum HP and +1 power. Camp lets you train one ally once (+30 XP).</p><p><b>Defeat & recovery:</b> No permadeath. Fallen keepers return fully healed next battle. Mira falling or the round limit expiring loses the chapter. Retry restores the chapter-start army and bonds; failed attempts cannot farm progression.</p><p>Progress autosaves after each order. Reload also restores a provisional move and completes an interrupted enemy phase. Sound is an original synthesized theme and starts only when enabled.</p>${button("Return to the field", "help", false, "primary")}</section></div>`;
+  return `<div class="overlay"><section class="dialog help"><div class="eyebrow">KEEPER’S HANDBOOK</div><h2>One lantern. Four keepers.</h2><p>Move once, then attack, heal, guard, wait, or light a beacon. You can act without moving. Cancel / Escape undoes a move until an action commits it. End round sends the Hollow forward; enemy actions resolve after the phase banner.</p><p><b>Terrain:</b> Forest costs 2 movement and adds 2 defense. Ruins add 1 defense. Water blocks movement. Shrines restore 5 HP at the next allied round. Units block passage. The attack-range overlay shows enemy strikes from their current squares; enemies may move before attacking. Bow range is exactly 2; all other attacks have range 1. Ione heals up to 9 HP within 2 tiles.</p><p><b>Bonds:</b> Any adjacent living ally grants +1 attack and +1 defense. Each supported attack adds 1 bond point. Rank I at 2 points, rank II at 4; rank II adds another point of attack. Benefits do not stack with multiple allies.</p><p><b>Growth:</b> Attacks earn 10 XP, kills 20, heals 10, beacons 15. Every 30 XP grants +2 maximum HP and +1 power. Camp lets you train one ally once (+30 XP).</p><p><b>Defeat & recovery:</b> No permadeath. Fallen keepers return fully healed next battle. Mira falling or the round limit expiring loses the chapter. Retry restores the chapter-start army and bonds; failed attempts cannot farm progression.</p><p>Progress autosaves after each order. Reload also restores a provisional move and completes an interrupted enemy phase. Sound is an original synthesized theme and starts only when enabled.</p>${button("Return to the field", "help", false, "primary")}</section></div>`;
 }
 function render() {
   const ch = chapters[state.chapter];
@@ -214,6 +216,7 @@ function clickTile(p: number) {
   }
   if (unit?.team === "enemy") {
     if (state.selected && preview(state, state.selected, unit.id)) {
+      inspected = null;
       target = unit.id;
       render();
     } else {
@@ -268,6 +271,7 @@ function handle(action: string) {
   }
   if (action === "back") {
     target = null;
+    inspected = null;
     render();
     return;
   }
