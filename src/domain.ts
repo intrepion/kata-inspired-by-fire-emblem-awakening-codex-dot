@@ -449,6 +449,8 @@ export function command(s: State, c: Command): State {
   if (c.type === "next" && n.phase === "camp" && n.trained) {
     n.chapter++;
     n.units = recoveredKeepers(n.units);
+    n.lit = [];
+    n.round = 1;
     n.phase = "story";
     return n;
   }

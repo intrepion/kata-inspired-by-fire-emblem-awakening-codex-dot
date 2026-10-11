@@ -191,6 +191,7 @@ it("chapter transitions recover and redeploy the army before a story save", () =
   let s = fresh();
   s.chapter = 1;
   s = battle(s);
+  s.lit = [20, 30];
   s.units[2].pos = 34;
   s.units[2].hp = 0;
   s.phase = "victory";
@@ -201,4 +202,36 @@ it("chapter transitions recover and redeploy the army before a story save", () =
   expect(s.units[2].hp).toBe(24);
   expect(s.units[2].pos).toBe(48);
   expect(decodeSave(JSON.stringify(s))).toEqual(s);
+});
+it("forest costs two movement rather than one", () => {
+  const s = battle(fresh());
+  s.units[0].pos = 9;
+  s.units[0].move = 2;
+  expect(reachable(s, "mira")).toContain(10);
+  expect(reachable(s, "mira")).not.toContain(11);
+});
+it("lighting the second beacon ends battle and final victory leads to the ending", () => {
+  let s = fresh();
+  s.chapter = 1;
+  s = battle(s);
+  s.lit = [20];
+  s.units[0].pos = 30;
+  s = command(s, { type: "select", id: "mira" });
+  s = command(s, { type: "light" });
+  expect(s.phase).toBe("victory");
+  s.chapter = 2;
+  s = command(s, { type: "continue" });
+  expect(s.phase).toBe("ending");
+  expect(command(s, { type: "end" })).toEqual(s);
+});
+it("rank-II support improves attack without stacking multiple supporters", () => {
+  const s = battle(fresh());
+  s.units[0].pos = 20;
+  s.units[1].pos = 28;
+  s.units[2].pos = 19;
+  expect(preview(s, "mira", "enemy0")?.damage).toBe(12);
+  s.bonds["bram:mira"] = 4;
+  expect(preview(s, "mira", "enemy0")?.damage).toBe(13);
+  s.bonds["mira:sable"] = 4;
+  expect(preview(s, "mira", "enemy0")?.damage).toBe(13);
 });
