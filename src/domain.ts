@@ -238,18 +238,27 @@ function walk(s: State, u: Unit, budget: number): number[] {
   }
   return [...costs.keys()].filter((p) => p !== u.pos);
 }
-export function battle(s: State): State {
-  const n = structuredClone(s);
-  n.units = n.units
+function recoveredKeepers(units: Unit[]): Unit[] {
+  const deployment: Record<string, number> = {
+    mira: 49,
+    bram: 50,
+    sable: 48,
+    ione: 51,
+  };
+  return units
     .filter((u) => u.team === "ally")
-    .map((u, i) => ({
+    .map((u) => ({
       ...u,
       hp: u.maxHp,
-      pos: [49, 50, 48, 51][i],
+      pos: deployment[u.id],
       acted: false,
       moved: false,
       guard: false,
     }));
+}
+export function battle(s: State): State {
+  const n = structuredClone(s);
+  n.units = recoveredKeepers(n.units);
   n.checkpoint = { units: structuredClone(n.units), bonds: { ...n.bonds } };
   for (const [i, e] of chapters[n.chapter].enemies.entries()) {
     n.units.push({
@@ -322,6 +331,23 @@ export function preview(
     advantage: advantage(a.weapon, b.weapon),
   };
 }
+export function healPreview(s: State, healer: string, target: string): number {
+  const a = s.units.find((u) => u.id === healer),
+    b = s.units.find((u) => u.id === target);
+  if (
+    !a ||
+    !b ||
+    a.weapon !== "staff" ||
+    a.team !== "ally" ||
+    b.team !== "ally" ||
+    a.hp <= 0 ||
+    b.hp <= 0 ||
+    a.id === b.id ||
+    distance(a.pos, b.pos) > 2
+  )
+    return 0;
+  return Math.min(9, b.maxHp - b.hp);
+}
 function xp(s: State, u: Unit, amount: number) {
   if (u.team !== "ally") return;
   u.xp += amount;
@@ -329,9 +355,9 @@ function xp(s: State, u: Unit, amount: number) {
     u.xp -= 30;
     u.level++;
     u.maxHp += 2;
-    u.hp = Math.min(u.maxHp, u.hp + 2);
+    // Growth increases capacity, never alters the HP shown in a combat forecast.
     u.atk++;
-    s.log.push(`${u.name} reached level ${u.level}: +2 HP, +1 power.`);
+    s.log.push(`${u.name} reached level ${u.level}: +2 maximum HP, +1 power.`);
   }
 }
 function strike(s: State, a: Unit, b: Unit) {
@@ -416,11 +442,13 @@ export function command(s: State, c: Command): State {
     if (v) {
       xp(n, v, 30);
       n.trained = true;
+      n.log = n.log.slice(-24);
     }
     return n;
   }
   if (c.type === "next" && n.phase === "camp" && n.trained) {
     n.chapter++;
+    n.units = recoveredKeepers(n.units);
     n.phase = "story";
     return n;
   }
@@ -460,15 +488,8 @@ export function command(s: State, c: Command): State {
   }
   if (active && c.type === "heal" && u.weapon === "staff") {
     const b = n.units.find((v) => v.id === c.target);
-    if (
-      b &&
-      b.team === "ally" &&
-      b.hp > 0 &&
-      b.hp < b.maxHp &&
-      distance(u.pos, b.pos) <= 2 &&
-      b.id !== u.id
-    ) {
-      const heal = Math.min(9, b.maxHp - b.hp);
+    const heal = healPreview(n, u.id, c.target);
+    if (b && heal > 0) {
       b.hp += heal;
       xp(n, u, 10);
       n.log.push(`${u.name} restores ${heal} HP to ${b.name}.`);
@@ -635,6 +656,36 @@ export function decodeSave(raw: string): State | null {
       (n.origin !== null && n.selected === null)
     )
       return null;
+    const keepers = fresh().units;
+    for (const u of [...n.units, ...n.checkpoint.units]) {
+      const known = keepers.find((k) => k.id === u.id);
+      if (
+        known
+          ? u.name !== known.name ||
+            u.role !== known.role ||
+            u.team !== "ally" ||
+            u.weapon !== known.weapon
+          : u.team !== "enemy" ||
+            u.role !== "Hollow" ||
+            !chapters.some(
+              (ch) => ch.enemies[Number(u.id.slice(5))]?.[0] === u.name,
+            )
+      )
+        return null;
+    }
+    if (n.origin !== null) {
+      const selected = n.units.find((u) => u.id === n.selected)!;
+      if (
+        n.phase !== "player" ||
+        !selected.moved ||
+        n.origin === selected.pos ||
+        terrain(n, n.origin) === "~" ||
+        n.units.some(
+          (u) => u.hp > 0 && u.id !== selected.id && u.pos === n.origin,
+        )
+      )
+        return null;
+    }
     const living = n.units.filter((u) => u.hp > 0);
     if (
       new Set(living.map((u) => u.pos)).size !== living.length ||

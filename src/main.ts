@@ -6,6 +6,7 @@ import {
   reachable,
   preview,
   distance,
+  healPreview,
   terrain,
   defense,
   supporters,
@@ -113,13 +114,10 @@ function panel() {
       ? `<div class="actions">${button("Guard · +3 defense / heal 3", "guard")}${chapters[state.chapter].beacons.includes(u.pos) && !state.lit.includes(u.pos) ? button("Light watchfire", "light", false, "primary") : ""}${
           u.weapon === "staff"
             ? allies
-                .filter(
-                  (v) =>
-                    v.hp > 0 && v.hp < v.maxHp && distance(u.pos, v.pos) <= 2,
-                )
+                .filter((v) => healPreview(state, u.id, v.id) > 0)
                 .map((v) =>
                   button(
-                    `Heal ${v.name} · +${Math.min(9, v.maxHp - v.hp)} HP`,
+                    `Heal ${v.name} · +${healPreview(state, u.id, v.id)} HP`,
                     `heal:${v.id}`,
                   ),
                 )

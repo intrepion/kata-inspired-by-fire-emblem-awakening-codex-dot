@@ -143,3 +143,62 @@ describe("combat and lifecycle", () => {
     expect(decodeSave(JSON.stringify({ ...s, lit: [20] }))).toBeNull();
   });
 });
+describe("independent review regressions", () => {
+  it("a lethal counter stays lethal even when the attack earns a level", () => {
+    let s = battle(fresh());
+    s.units[0].pos = 20;
+    s.units[1].pos = 28;
+    s.units[0].hp = 1;
+    s.units[0].xp = 20;
+    expect(preview(s, "mira", "enemy0")?.counter).toBe(1);
+    s = command(s, { type: "select", id: "mira" });
+    s = command(s, { type: "attack", target: "enemy0" });
+    expect(s.units[0].hp).toBe(0);
+    expect(s.phase).toBe("defeat");
+  });
+  it("camp training at the journal limit remains reloadable", () => {
+    let s = battle(fresh());
+    s.log = Array(24).fill("An order.");
+    s.phase = "victory";
+    s = command(s, { type: "continue" });
+    s = command(s, { type: "train", id: "mira" });
+    expect(decodeSave(JSON.stringify(s))).toEqual(s);
+  });
+  it("rejects a provisional origin occupied by another keeper or blocked by water", () => {
+    let s = command(battle(fresh()), { type: "select", id: "mira" });
+    s = command(s, { type: "move", pos: 25 });
+    expect(decodeSave(JSON.stringify({ ...s, origin: 50 }))).toBeNull();
+    expect(decodeSave(JSON.stringify({ ...s, origin: 34 }))).toBeNull();
+  });
+});
+it("rejects tampered character labels in untrusted saves", () => {
+  const s = battle(fresh());
+  s.units[0].name = "<img src=x onerror=alert(1)>";
+  expect(decodeSave(JSON.stringify(s))).toBeNull();
+});
+it("surviving level growth preserves the final HP displayed by the forecast", () => {
+  let s = battle(fresh());
+  s.units[0].pos = 20;
+  s.units[1].pos = 28;
+  s.units[0].xp = 20;
+  s.units[0].hp = 15;
+  s = command(s, { type: "select", id: "mira" });
+  s = command(s, { type: "attack", target: "enemy0" });
+  expect(s.units[0].hp).toBe(14);
+  expect(s.units[0].maxHp).toBe(28);
+});
+it("chapter transitions recover and redeploy the army before a story save", () => {
+  let s = fresh();
+  s.chapter = 1;
+  s = battle(s);
+  s.units[2].pos = 34;
+  s.units[2].hp = 0;
+  s.phase = "victory";
+  s = command(s, { type: "continue" });
+  s = command(s, { type: "train", id: "sable" });
+  s = command(s, { type: "next" });
+  expect(s.units.every((u) => u.team === "ally")).toBe(true);
+  expect(s.units[2].hp).toBe(24);
+  expect(s.units[2].pos).toBe(48);
+  expect(decodeSave(JSON.stringify(s))).toEqual(s);
+});

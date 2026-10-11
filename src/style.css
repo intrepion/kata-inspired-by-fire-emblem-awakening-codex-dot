@@ -951,3 +951,21 @@ footer span {
     width: 36px;
   }
 }
+@media (min-width: 741px) {
+  .battle {
+    grid-template-columns: minmax(350px, calc((100vh - 295px) * 8 / 7)) 300px;
+    width: fit-content;
+    max-width: 1100px;
+  }
+  .board-wrap {
+    width: 100%;
+    min-width: 0;
+  }
+  .journal {
+    max-height: 190px;
+    overflow: auto;
+  }
+  .field-controls .muted {
+    display: none;
+  }
+}
