@@ -17,3 +17,7 @@ Initial findings: lethal counter death reversed by leveling, and saves accepted 
 Independent Spec recheck of `257ef2c1a9fb04722c67428d6ff547a43d46ec3f`: “Both previous findings are fixed.” “No remaining meaningful spec blockers identified from the reviewed changes.” All 19 tests passed in that independent recheck. Standards then identified and verified the additional beacon transition fix; the final suite has 22 tests.
 
 The later UI-only polish permits enemy inspection without losing a provisional order and clarifies that the attack overlay covers current positions. These were verified with normal Chrome controls. No review claims a human interview occurred.
+
+## Final inspection correction
+
+Both independent reviewers found that the UI polish in `7c12d28` could expose orders for an inspected ally while a different keeper retained a provisional move. The correction requires the displayed unit to match the selected unit before exposing actions, gives any other inspected unit a return button, and clears stale forecast targets on inspection. Both reviewers independently rechecked this source delta and reported no remaining meaningful blockers. Their review was read-only; the primary agent verified the flow separately in Chrome.

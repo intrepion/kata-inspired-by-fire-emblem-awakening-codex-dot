@@ -16,6 +16,8 @@ Observed tactical choices:
 
 Additional normal-control checks: invalid water/blocked movement rejected; provisional movement saved/reloaded and cancelled; Escape undid a move and dismissed help; enemy phase reload resumed once and advanced round 2→3; explicit Save worked; reset cancellation retained the ending; reset confirmation produced a fresh title save; enemy inspection returned to the same provisional orders; current enemy range overlay toggled. Deliberately ending ten watchfire rounds without objectives produced defeat, a fallen Sable, and a reloadable retry that restored all chapter-start HP/XP/bonds.
 
+Final inspection regression check: with Mira provisionally moved, inspecting Ione and Bram exposed their details and Back to orders without Guard/Wait actions. Returning restored Mira’s orders; inspecting an enemy also returned correctly, and Undo restored Mira’s original tile. Reset and reload left the user a fresh title screen. Both independent reviewers confirmed the corresponding source correction.
+
 Responsive checks: default desktop (1185×690), mobile override (390×844, final strike and ending), tablet override (820×1024, grid/range controls). DOM measurements at mobile/tablet found scrollWidth equal to viewport width. Overrides were reset. Full-page screenshots were saved and inspected; controls remain scrollable on smaller screens. Some Chrome extension warnings appeared, not application errors.
 
 ## Automated domain evidence

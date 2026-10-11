@@ -100,7 +100,11 @@ function panel() {
   const p = target ? preview(state, u.id, target) : null;
   const victim = state.units.find((v) => v.id === target);
   const active =
-    state.phase === "player" && u.team === "ally" && !u.acted && u.hp > 0;
+    state.phase === "player" &&
+    u.id === state.selected &&
+    u.team === "ally" &&
+    !u.acted &&
+    u.hp > 0;
   const allies = state.units.filter((v) => v.team === "ally" && v.id !== u.id);
   return `<div class="panel-label">${u.team === "ally" ? "KEEPER" : "HOLLOW"} · ${u.role}</div><div class="detail-title"><div class="portrait big">${portrait(u)}</div><div><h2>${u.name}</h2><p>${u.weapon} · Lv ${u.level}<br>${u.hp} / ${u.maxHp} HP</p></div></div><div class="stats"><span><b>${u.atk}</b>Power</span><span><b>${u.def}</b>Armor</span><span><b>${u.move}</b>Move</span><span><b>${defense(state, u.pos)}</b>Terrain</span></div><p class="support">Support: ${
     supporters(state, u)
@@ -124,7 +128,7 @@ function panel() {
                 .join("")
             : ""
         }${button("Wait", "wait")}${button(state.origin !== null ? "Undo move & cancel" : "Cancel selection", "cancel")}</div><small class="muted">Click an enemy in range for its exact combat preview.</small>`
-      : u.team === "enemy" && state.selected
+      : state.selected && u.id !== state.selected
         ? button("Back to orders", "back")
         : ""
   }`;
@@ -210,6 +214,7 @@ function clickTile(p: number) {
       dispatch({ type: "select", id: unit.id });
     } else {
       inspected = unit.id;
+      target = null;
       render();
     }
     return;
@@ -221,6 +226,7 @@ function clickTile(p: number) {
       render();
     } else {
       inspected = unit.id;
+      target = null;
       render();
     }
     return;
