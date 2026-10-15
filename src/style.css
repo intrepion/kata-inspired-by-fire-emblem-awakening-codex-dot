@@ -969,3 +969,27 @@ footer span {
     display: none;
   }
 }
+
+.pair-tag {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  z-index: 3;
+  font: 8px/1.2 system-ui;
+  background: #d7bd81;
+  color: #213731;
+  padding: 2px 3px;
+  border-radius: 2px;
+  max-width: 95%;
+  white-space: nowrap;
+}
+.dual-forecast {
+  font-size: 12px;
+  border-left: 2px solid #cbb77e;
+  padding-left: 8px;
+}
+.forecast small {
+  display: block;
+  font-size: 10px;
+  line-height: 1.5;
+}

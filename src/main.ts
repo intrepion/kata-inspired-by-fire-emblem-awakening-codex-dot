@@ -10,6 +10,9 @@ import {
   terrain,
   defense,
   supporters,
+  partnerOf,
+  pairTargets,
+  separationTiles,
   bondRank,
   inRange,
   type State,
@@ -82,21 +85,21 @@ function cards() {
     .filter((u) => u.team === "ally")
     .map(
       (u) =>
-        `<button class="keeper ${u.id === state.selected ? "chosen" : ""} ${u.hp <= 0 ? "fallen" : ""}" data-select="${u.id}" ${state.phase !== "player" || u.hp <= 0 || u.acted || state.origin !== null ? "disabled" : ""} aria-label="Select ${u.name}"><div class="portrait">${portrait(u)}</div><div><strong>${u.name} <span>${weapons[u.weapon]}</span></strong><small>${u.role} · Lv ${u.level}${u.acted ? " · DONE" : ""}</small><div class="health"><i style="width:${(100 * u.hp) / u.maxHp}%"></i></div><small>${u.hp}/${u.maxHp} HP · ${u.xp}/30 XP</small></div></button>`,
+        `<button class="keeper ${u.id === state.selected ? "chosen" : ""} ${u.hp <= 0 ? "fallen" : ""}" data-select="${u.id}" ${state.phase !== "player" || u.pairedTo || u.hp <= 0 || u.acted || state.origin !== null ? "disabled" : ""} aria-label="Select ${u.name}"><div class="portrait">${portrait(u)}</div><div><strong>${u.name} <span>${weapons[u.weapon]}</span></strong><small>${u.pairedTo ? `Reserve behind ${partnerOf(state, u)?.name}` : u.role} · Lv ${u.level}${u.acted ? " · DONE" : ""}</small><div class="health"><i style="width:${(100 * u.hp) / u.maxHp}%"></i></div><small>${u.hp}/${u.maxHp} HP · ${u.xp}/30 XP</small></div></button>`,
     )
     .join("");
 }
 function tile(p: number, moves: number[], threat: Set<number>) {
-  const u = state.units.find((v) => v.pos === p && v.hp > 0);
+  const u = state.units.find((v) => v.pos === p && v.hp > 0 && !v.pairedTo);
   const t = terrain(state, p);
   const beacon = chapters[state.chapter].beacons.includes(p);
   const pvw = state.selected && u ? preview(state, state.selected, u.id) : null;
-  return `<button data-tile="${p}" class="tile t-${t === "." ? "road" : t === "~" ? "water" : t} ${moves.includes(p) ? "reachable" : ""} ${danger && threat.has(p) ? "danger" : ""} ${u?.id === state.selected ? "selected" : ""} ${pvw ? "attackable" : ""}" aria-label="Tile ${(p % 8) + 1},${Math.floor(p / 8) + 1}, ${terrainNames[t]}${beacon ? `, ${state.lit.includes(p) ? "lit" : "unlit"} beacon` : ""}${u ? `, ${u.name}, ${u.hp} HP` : ""}"><span class="terrain-art">${t === "f" ? "♠" : t === "r" ? "▥" : t === "s" ? "✧" : t === "~" ? "≈" : ""}</span>${beacon ? `<span class="beacon ${state.lit.includes(p) ? "lit" : ""}">♜</span>` : ""}${u ? `<span class="token ${u.team} ${u.acted ? "spent" : ""}">${portrait(u)}<b>${weapons[u.weapon]}</b><i style="--hp:${(100 * u.hp) / u.maxHp}%"></i></span>` : ""}<span class="coordinate">${String.fromCharCode(65 + (p % 8))}${Math.floor(p / 8) + 1}</span></button>`;
+  return `<button data-tile="${p}" class="tile t-${t === "." ? "road" : t === "~" ? "water" : t} ${moves.includes(p) ? "reachable" : ""} ${danger && threat.has(p) ? "danger" : ""} ${u?.id === state.selected ? "selected" : ""} ${pvw ? "attackable" : ""}" aria-label="Tile ${(p % 8) + 1},${Math.floor(p / 8) + 1}, ${terrainNames[t]}${beacon ? `, ${state.lit.includes(p) ? "lit" : "unlit"} beacon` : ""}${u ? `, ${u.name}, ${u.hp} HP` : ""}"><span class="terrain-art">${t === "f" ? "♠" : t === "r" ? "▥" : t === "s" ? "✧" : t === "~" ? "≈" : ""}</span>${beacon ? `<span class="beacon ${state.lit.includes(p) ? "lit" : ""}">♜</span>` : ""}${u ? `<span class="token ${u.team} ${u.acted ? "spent" : ""}">${portrait(u)}<b>${weapons[u.weapon]}</b>${partnerOf(state, u) ? `<em class="pair-tag">+ ${partnerOf(state, u)!.name}</em>` : ""}<i style="--hp:${(100 * u.hp) / u.maxHp}%"></i></span>` : ""}<span class="coordinate">${String.fromCharCode(65 + (p % 8))}${Math.floor(p / 8) + 1}</span></button>`;
 }
 function panel() {
   const u = state.units.find((u) => u.id === (inspected ?? state.selected));
   if (!u)
-    return `<div class="panel-label">FIELD NOTES</div><h2>Keep the light close.</h2><p>Select a keeper, then a highlighted square to move. Click an enemy to preview a strike.</p><div class="rule-card"><strong>Formation matters</strong><p>Adjacent allies grant +1 power and +1 defense. Shared attacks grow their bond; rank II grants +2 power.</p></div><div class="rule-card"><strong>Know your weapon</strong><p>Blade → Axe → Lance → Blade.<br>Advantage shifts power by 2. Bow strikes at exactly 2 tiles.</p></div><p class="muted">A move is provisional until an action. Cancel returns to the starting square.</p>`;
+    return `<div class="panel-label">FIELD NOTES</div><h2>Keep the light close.</h2><p>Select a keeper, then a highlighted square to move. Click an enemy to preview a strike.</p><div class="rule-card"><strong>Pair Up and stand together</strong><p>Adjacent allies support. Pair Up shares one square, strengthens the front and enables chance-based partner strikes/guards. Select a keeper beside an ally to pair.</p></div><div class="rule-card"><strong>Know your weapon</strong><p>Blade → Axe → Lance → Blade.<br>Advantage shifts power by 2. Bow strikes at exactly 2 tiles.</p></div><p class="muted">A move is provisional until an action. Cancel returns to the starting square.</p>`;
   const p = target ? preview(state, u.id, target) : null;
   const victim = state.units.find((v) => v.id === target);
   const active =
@@ -104,6 +107,7 @@ function panel() {
     u.id === state.selected &&
     u.team === "ally" &&
     !u.acted &&
+    !u.pairedTo &&
     u.hp > 0;
   const allies = state.units.filter((v) => v.team === "ally" && v.id !== u.id);
   return `<div class="panel-label">${u.team === "ally" ? "KEEPER" : "HOLLOW"} · ${u.role}</div><div class="detail-title"><div class="portrait big">${portrait(u)}</div><div><h2>${u.name}</h2><p>${u.weapon} · Lv ${u.level}<br>${u.hp} / ${u.maxHp} HP</p></div></div><div class="stats"><span><b>${u.atk}</b>Power</span><span><b>${u.def}</b>Armor</span><span><b>${u.move}</b>Move</span><span><b>${defense(state, u.pos)}</b>Terrain</span></div><p class="support">Support: ${
@@ -113,9 +117,40 @@ function panel() {
           `${v.name} (rank ${bondRank(state, u.id, v.id) === 2 ? "II" : bondRank(state, u.id, v.id) === 1 ? "I" : "—"})`,
       )
       .join(", ") || "No adjacent ally"
-  }</p>${p && victim ? `<div class="forecast" role="status"><div class="panel-label">COMBAT FORECAST · CERTAIN HIT</div><h3>${u.name} → ${victim.name}</h3><div class="forecast-values"><span><b>${p.damage}</b>damage<br>${victim.hp} → ${victim.hp - p.damage} HP</span><span><b>${p.counter}</b>counter<br>${u.hp} → ${u.hp - p.counter} HP</span></div><p>${p.advantage > 0 ? "Weapon advantage +2" : p.advantage < 0 ? "Weapon disadvantage −2" : "Neutral weapon matchup"}${p.support.length ? ` · ${p.support.join(" + ")} support` : ""}</p>${button("Confirm strike", "strike", !active, "primary")}${button("Back to orders", "back")}</div>` : ""}${
+  }</p>${
+    p && victim
+      ? `<div class="forecast" role="status"><div class="panel-label">COMBAT FORECAST · BASE HIT / CHANCE SUPPORT</div><h3>${u.name} → ${victim.name}</h3><div class="forecast-values"><span><b>${p.damage}</b>damage<br>${victim.hp} → ${victim.hp - p.damage} HP</span><span><b>${p.counter}</b>counter<br>${u.hp} → ${u.hp - p.counter} HP</span></div><p>${p.advantage > 0 ? "Weapon advantage +2" : p.advantage < 0 ? "Weapon disadvantage −2" : "Neutral weapon matchup"}${p.support.length ? ` · ${p.support.join(" + ")} support` : ""}</p>${[
+          p.attackerPartner,
+          p.defenderPartner,
+        ]
+          .filter(Boolean)
+          .map(
+            (partner) =>
+              `<p class="dual-forecast"><strong>${partner!.partner}</strong> · Dual Strike ${partner!.strikeChance}% (+${partner!.strikeDamage} damage) · Dual Guard ${partner!.guardChance}% (blocks a blow)</p>`,
+          )
+          .join(
+            "",
+          )}<small>Partner rolls may prevent a counter or block damage. The base forecast excludes these chance effects.</small>${button("Confirm strike", "strike", !active, "primary")}${button("Back to orders", "back")}</div>`
+      : ""
+  }${
     active && !p
-      ? `<div class="actions">${button("Guard · +3 defense / heal 3", "guard")}${chapters[state.chapter].beacons.includes(u.pos) && !state.lit.includes(u.pos) ? button("Light watchfire", "light", false, "primary") : ""}${
+      ? `<div class="actions">${pairTargets(state, u.id)
+          .map((v) => button(`Pair Up behind ${v.name}`, `pair:${v.id}`))
+          .join(
+            "",
+          )}${partnerOf(state, u) ? button(`Switch front to ${partnerOf(state, u)!.name}`, "switch-pair") : ""}${separationTiles(
+          state,
+          u.id,
+        )
+          .map((pos) =>
+            button(
+              `Separate ${partnerOf(state, u)!.name} to ${String.fromCharCode(65 + (pos % 8))}${Math.floor(pos / 8) + 1}`,
+              `separate:${pos}`,
+            ),
+          )
+          .join(
+            "",
+          )}${button("Guard · +3 defense / heal 3", "guard")}${chapters[state.chapter].beacons.includes(u.pos) && !state.lit.includes(u.pos) ? button("Light watchfire", "light", false, "primary") : ""}${
           u.weapon === "staff"
             ? allies
                 .filter((v) => healPreview(state, u.id, v.id) > 0)
@@ -134,7 +169,7 @@ function panel() {
   }`;
 }
 function helpContent() {
-  return `<div class="overlay"><section class="dialog help"><div class="eyebrow">KEEPER’S HANDBOOK</div><h2>One lantern. Four keepers.</h2><p>Move once, then attack, heal, guard, wait, or light a beacon. You can act without moving. Cancel / Escape undoes a move until an action commits it. End round sends the Hollow forward; enemy actions resolve after the phase banner.</p><p><b>Terrain:</b> Forest costs 2 movement and adds 2 defense. Ruins add 1 defense. Water blocks movement. Shrines restore 5 HP at the next allied round. Units block passage. The attack-range overlay shows enemy strikes from their current squares; enemies may move before attacking. Bow range is exactly 2; all other attacks have range 1. Ione heals up to 9 HP within 2 tiles.</p><p><b>Bonds:</b> Any adjacent living ally grants +1 attack and +1 defense. Each supported attack adds 1 bond point. Rank I at 2 points, rank II at 4; rank II adds another point of attack. Benefits do not stack with multiple allies.</p><p><b>Growth:</b> Attacks earn 10 XP, kills 20, heals 10, beacons 15. Every 30 XP grants +2 maximum HP and +1 power. Camp lets you train one ally once (+30 XP).</p><p><b>Defeat & recovery:</b> No permadeath. Fallen keepers return fully healed next battle. Mira falling or the round limit expiring loses the chapter. Retry restores the chapter-start army and bonds; failed attempts cannot farm progression.</p><p>Progress autosaves after each order. Reload also restores a provisional move and completes an interrupted enemy phase. Sound is an original synthesized theme and starts only when enabled.</p>${button("Return to the field", "help", false, "primary")}</section></div>`;
+  return `<div class="overlay"><section class="dialog help"><div class="eyebrow">KEEPER’S HANDBOOK</div><h2>One lantern. Four keepers.</h2><p>Move once, then attack, heal, guard, wait, or light a beacon. You can act without moving. Cancel / Escape undoes a move until an action commits it. End round sends the Hollow forward; enemy actions resolve after the phase banner.</p><p><b>Terrain:</b> Forest costs 2 movement and adds 2 defense. Ruins add 1 defense. Water blocks movement. Shrines restore 5 HP at the next allied round. Units block passage. The attack-range overlay shows enemy strikes from their current squares; enemies may move before attacking. Bow range is exactly 2; all other attacks have range 1. Ione heals up to 9 HP within 2 tiles.</p><p><b>Bonds:</b> Any adjacent living ally grants +1 attack and +1 defense. Each supported attack adds 1 bond point. Rank I at 2 points, rank II at 4; rank II adds another point of attack. Benefits do not stack with multiple allies.</p><p><b>Pair Up:</b> Select an active keeper beside an unpaired ally, then Pair Up. The joining keeper spends their action and shares the front’s square. Only the front takes orders. Switch changes the front and spends movement; its remaining action is shared. Separate places the reserve on a legal adjacent square and ends both units’ actions. Partner Dual Strike and Dual Guard use displayed chances and a saved deterministic seed.</p><p><b>Growth:</b> Attacks earn 10 XP, kills 20, heals 10, beacons 15. Every 30 XP grants +2 maximum HP and +1 power. Camp lets you train one ally once (+30 XP).</p><p><b>Defeat & recovery:</b> No permadeath. Fallen keepers return fully healed next battle. Mira falling or the round limit expiring loses the chapter. Retry restores the chapter-start army and bonds; failed attempts cannot farm progression.</p><p>Progress autosaves after each order. Reload also restores a provisional move and completes an interrupted enemy phase. Sound is an original synthesized theme and starts only when enabled.</p>${button("Return to the field", "help", false, "primary")}</section></div>`;
 }
 function render() {
   const ch = chapters[state.chapter];
@@ -208,7 +243,7 @@ function render() {
 }
 function clickTile(p: number) {
   if (state.phase !== "player") return;
-  const unit = state.units.find((u) => u.pos === p && u.hp > 0);
+  const unit = state.units.find((u) => u.pos === p && u.hp > 0 && !u.pairedTo);
   if (unit?.team === "ally") {
     if (state.origin === null && !unit.acted) {
       dispatch({ type: "select", id: unit.id });
@@ -283,6 +318,14 @@ function handle(action: string) {
   }
   if (action === "strike" && target) {
     dispatch({ type: "attack", target });
+    return;
+  }
+  if (action.startsWith("pair:")) {
+    dispatch({ type: "pair", target: action.slice(5) });
+    return;
+  }
+  if (action.startsWith("separate:")) {
+    dispatch({ type: "separate", pos: Number(action.slice(9)) });
     return;
   }
   if (action.startsWith("heal:")) {

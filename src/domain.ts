@@ -9,6 +9,7 @@ export type Phase =
   | "camp"
   | "ending";
 export interface Unit {
+  pairedTo: string | null;
   id: string;
   name: string;
   role: string;
@@ -27,11 +28,13 @@ export interface Unit {
   guard: boolean;
 }
 export interface Army {
+  rng: number;
   units: Unit[];
   bonds: Record<string, number>;
 }
 export interface State {
-  version: 1;
+  version: 2;
+  rng: number;
   chapter: number;
   phase: Phase;
   round: number;
@@ -153,6 +156,7 @@ const keeper = (
   def: number,
   move: number,
 ): Unit => ({
+  pairedTo: null,
   id,
   name,
   role,
@@ -178,7 +182,8 @@ export function fresh(): State {
     keeper("ione", "Ione", "Flamebinder", "staff", 51, 22, 8, 2, 4),
   ];
   return {
-    version: 1,
+    version: 2,
+    rng: 123456789,
     chapter: 0,
     phase: "title",
     round: 1,
@@ -188,7 +193,7 @@ export function fresh(): State {
     selected: null,
     origin: null,
     log: [],
-    checkpoint: { units: structuredClone(units), bonds: {} },
+    checkpoint: { units: structuredClone(units), bonds: {}, rng: 123456789 },
     trained: false,
   };
 }
@@ -201,18 +206,74 @@ export const defense = (s: State, p: number) =>
 export const bondKey = (a: string, b: string) => [a, b].sort().join(":");
 export const bondRank = (s: State, a: string, b: string) =>
   Math.min(2, Math.floor((s.bonds[bondKey(a, b)] ?? 0) / 2));
+export function partnerOf(s: State, u: Unit): Unit | undefined {
+  return u.pairedTo
+    ? s.units.find((v) => v.id === u.pairedTo && v.hp > 0)
+    : s.units.find((v) => v.pairedTo === u.id && v.hp > 0);
+}
+export function pairTargets(s: State, id: string): Unit[] {
+  const u = s.units.find((v) => v.id === id);
+  if (
+    !u ||
+    u.team !== "ally" ||
+    u.pairedTo ||
+    partnerOf(s, u) ||
+    u.hp <= 0 ||
+    u.acted ||
+    s.phase !== "player"
+  )
+    return [];
+  return s.units.filter(
+    (v) =>
+      v.id !== id &&
+      v.team === "ally" &&
+      v.hp > 0 &&
+      !v.pairedTo &&
+      !partnerOf(s, v) &&
+      distance(u.pos, v.pos) === 1,
+  );
+}
+export function separationTiles(s: State, id: string): number[] {
+  const u = s.units.find((v) => v.id === id);
+  if (
+    !u ||
+    u.team !== "ally" ||
+    u.pairedTo ||
+    !partnerOf(s, u) ||
+    u.acted ||
+    s.phase !== "player"
+  )
+    return [];
+  return [u.pos - 8, u.pos + 8, u.pos - 1, u.pos + 1].filter(
+    (p) =>
+      p >= 0 &&
+      p < 56 &&
+      distance(p, u.pos) === 1 &&
+      terrain(s, p) !== "~" &&
+      !s.units.some((v) => v.hp > 0 && !v.pairedTo && v.pos === p),
+  );
+}
 export function supporters(s: State, u: Unit): Unit[] {
+  if (u.pairedTo) return [];
   return s.units.filter(
     (v) =>
       v.team === u.team &&
       v.hp > 0 &&
       v.id !== u.id &&
-      distance(u.pos, v.pos) === 1,
+      (v.pairedTo === u.id || (!v.pairedTo && distance(u.pos, v.pos) === 1)),
   );
 }
 export function reachable(s: State, id: string): number[] {
   const u = s.units.find((u) => u.id === id);
-  if (!u || u.hp <= 0 || u.moved || u.acted || s.phase !== "player") return [];
+  if (
+    !u ||
+    u.pairedTo ||
+    u.hp <= 0 ||
+    u.moved ||
+    u.acted ||
+    s.phase !== "player"
+  )
+    return [];
   return walk(s, u, u.move);
 }
 function walk(s: State, u: Unit, budget: number): number[] {
@@ -226,7 +287,9 @@ function walk(s: State, u: Unit, budget: number): number[] {
         n >= 56 ||
         distance(p, n) !== 1 ||
         terrain(s, n) === "~" ||
-        s.units.some((v) => v.hp > 0 && v.id !== u.id && v.pos === n)
+        s.units.some(
+          (v) => v.hp > 0 && !v.pairedTo && v.id !== u.id && v.pos === n,
+        )
       )
         continue;
       const c = costs.get(p)! + (terrain(s, n) === "f" ? 2 : 1);
@@ -249,6 +312,7 @@ function recoveredKeepers(units: Unit[]): Unit[] {
     .filter((u) => u.team === "ally")
     .map((u) => ({
       ...u,
+      pairedTo: null,
       hp: u.maxHp,
       pos: deployment[u.id],
       acted: false,
@@ -259,7 +323,11 @@ function recoveredKeepers(units: Unit[]): Unit[] {
 export function battle(s: State): State {
   const n = structuredClone(s);
   n.units = recoveredKeepers(n.units);
-  n.checkpoint = { units: structuredClone(n.units), bonds: { ...n.bonds } };
+  n.checkpoint = {
+    units: structuredClone(n.units),
+    bonds: { ...n.bonds },
+    rng: n.rng,
+  };
   for (const [i, e] of chapters[n.chapter].enemies.entries()) {
     n.units.push({
       ...keeper(`enemy${i}`, e[0], "Hollow", e[1], e[2], e[3], e[4], e[5], 3),
@@ -301,13 +369,53 @@ function damage(s: State, a: Unit, b: Unit): number {
   return Math.max(
     1,
     a.atk +
+      (partnerOf(s, a) && !a.pairedTo ? 2 : 0) +
       advantage(a.weapon, b.weapon) +
       support -
       b.def -
+      (partnerOf(s, b) && !b.pairedTo ? 2 : 0) -
       defense(s, b.pos) -
       (b.guard ? 3 : 0) -
       (supporters(s, b).length ? 1 : 0),
   );
+}
+export interface PartnerForecast {
+  partner: string;
+  strikeChance: number;
+  strikeDamage: number;
+  guardChance: number;
+}
+function partnerDamage(s: State, partner: Unit, target: Unit) {
+  return Math.max(
+    1,
+    partner.atk +
+      advantage(partner.weapon, target.weapon) -
+      target.def -
+      defense(s, target.pos) -
+      (target.guard ? 3 : 0),
+  );
+}
+function partnerForecast(
+  s: State,
+  u: Unit,
+  target: Unit,
+): PartnerForecast | undefined {
+  const back = partnerOf(s, u);
+  if (!back || u.pairedTo) return;
+  const rank = bondRank(s, u.id, back.id);
+  const canStrike = back.weapon !== "staff" && inRange(back, target);
+  return {
+    partner: back.name,
+    strikeChance: canStrike ? 35 + rank * 15 : 0,
+    strikeDamage: canStrike
+      ? Math.min(target.hp, partnerDamage(s, back, target))
+      : 0,
+    guardChance: 15 + rank * 10,
+  };
+}
+function roll(s: State, chance: number) {
+  s.rng = (Math.imul(s.rng, 1664525) + 1013904223) >>> 0;
+  return Math.floor((s.rng / 4294967296) * 100) < chance;
 }
 export function preview(
   s: State,
@@ -318,17 +426,34 @@ export function preview(
   counter: number;
   support: string[];
   advantage: number;
+  attackerPartner?: PartnerForecast;
+  defenderPartner?: PartnerForecast;
 } | null {
   const a = s.units.find((u) => u.id === attacker),
     b = s.units.find((u) => u.id === target);
-  if (!a || !b || a.hp <= 0 || b.hp <= 0 || a.team === b.team || !inRange(a, b))
+  if (
+    !a ||
+    !b ||
+    a.pairedTo ||
+    b.pairedTo ||
+    a.hp <= 0 ||
+    b.hp <= 0 ||
+    a.team === b.team ||
+    !inRange(a, b)
+  )
     return null;
   const hit = damage(s, a, b);
+  const attackerPartner = partnerForecast(s, a, b);
+  let defenderPartner = partnerForecast(s, b, a);
+  if (defenderPartner && !inRange(b, a))
+    defenderPartner = { ...defenderPartner, strikeChance: 0, strikeDamage: 0 };
   return {
     damage: Math.min(b.hp, hit),
     counter: b.hp > hit && inRange(b, a) ? Math.min(a.hp, damage(s, b, a)) : 0,
     support: supporters(s, a).map((u) => u.name),
     advantage: advantage(a.weapon, b.weapon),
+    ...(attackerPartner ? { attackerPartner } : {}),
+    ...(defenderPartner ? { defenderPartner } : {}),
   };
 }
 export function healPreview(s: State, healer: string, target: string): number {
@@ -337,6 +462,8 @@ export function healPreview(s: State, healer: string, target: string): number {
   if (
     !a ||
     !b ||
+    a.pairedTo ||
+    b.pairedTo ||
     a.weapon !== "staff" ||
     a.team !== "ally" ||
     b.team !== "ally" ||
@@ -360,21 +487,55 @@ function xp(s: State, u: Unit, amount: number) {
     s.log.push(`${u.name} reached level ${u.level}: +2 maximum HP, +1 power.`);
   }
 }
+function resolveHit(s: State, a: Unit, b: Unit) {
+  const guard = partnerForecast(s, b, a);
+  let hit = Math.min(b.hp, damage(s, a, b));
+  if (guard && roll(s, guard.guardChance)) {
+    hit = 0;
+    s.log.push(
+      `${guard.partner} Dual Guard (${guard.guardChance}%): blocks the blow for ${b.name}.`,
+    );
+  }
+  b.hp -= hit;
+  s.log.push(`${a.name} → ${b.name}: ${hit} damage.`);
+  const assist = partnerForecast(s, a, b),
+    back = partnerOf(s, a);
+  if (b.hp > 0 && assist && back && assist.strikeChance > 0) {
+    if (roll(s, assist.strikeChance)) {
+      const extra = Math.min(b.hp, partnerDamage(s, back, b));
+      b.hp -= extra;
+      s.log.push(
+        `${back.name} Dual Strike (${assist.strikeChance}%): ${extra} damage.`,
+      );
+    } else
+      s.log.push(
+        `${back.name} Dual Strike (${assist.strikeChance}%): did not trigger.`,
+      );
+  }
+}
+function promoteFallen(s: State) {
+  for (const back of s.units.filter((v) => v.pairedTo)) {
+    const front = s.units.find((v) => v.id === back.pairedTo)!;
+    if (front.hp === 0) {
+      back.pairedTo = null;
+      back.acted = front.acted;
+      back.moved = front.moved;
+      s.log.push(`${back.name} takes the front after ${front.name} falls.`);
+    }
+  }
+}
 function strike(s: State, a: Unit, b: Unit) {
-  const p = preview(s, a.id, b.id);
-  if (!p) return;
+  if (!preview(s, a.id, b.id)) return;
   const supportersBefore = a.team === "ally" ? supporters(s, a) : [];
-  b.hp -= p.damage;
-  a.hp -= p.counter;
-  s.log.push(
-    `${a.name} → ${b.name}: ${p.damage} damage${p.counter ? `, ${p.counter} counter` : `, no counter`}.`,
-  );
+  resolveHit(s, a, b);
+  if (b.hp > 0 && inRange(b, a)) resolveHit(s, b, a);
   for (const v of supportersBefore) {
     const key = bondKey(a.id, v.id);
     s.bonds[key] = (s.bonds[key] ?? 0) + 1;
     s.log.push(`${a.name} + ${v.name}: bond strengthened.`);
   }
   xp(s, a, b.hp === 0 ? 20 : 10);
+  promoteFallen(s);
 }
 function outcome(s: State) {
   if (
@@ -411,14 +572,22 @@ export type Command =
     }
   | { type: "select"; id: string }
   | { type: "move"; pos: number }
-  | { type: "attack" | "heal"; target: string }
+  | { type: "attack" | "heal" | "pair"; target: string }
+  | { type: "switch-pair" }
+  | { type: "separate"; pos: number }
   | { type: "wait" | "guard" | "light" }
   | { type: "train"; id: string };
 export function command(s: State, c: Command): State {
   const n = structuredClone(s);
   const u = n.units.find((v) => v.id === n.selected);
   const active =
-    n.phase === "player" && u && u.hp > 0 && u.team === "ally" && !u.acted;
+    n.phase === "player" &&
+    u &&
+    !u.pairedTo &&
+    u.hp > 0 &&
+    u.team === "ally" &&
+    !u.acted;
+  const actingPartner = u ? partnerOf(n, u) : undefined;
   if (c.type === "reset") return fresh();
   if (c.type === "story" && n.phase === "title") {
     n.phase = "story";
@@ -428,6 +597,7 @@ export function command(s: State, c: Command): State {
   if (c.type === "retry" && n.phase === "defeat") {
     n.units = structuredClone(n.checkpoint.units);
     n.bonds = { ...n.checkpoint.bonds };
+    n.rng = n.checkpoint.rng;
     return battle(n);
   }
   if (c.type === "continue" && n.phase === "victory") {
@@ -456,13 +626,21 @@ export function command(s: State, c: Command): State {
   }
   if (c.type === "select" && n.phase === "player") {
     const v = n.units.find((v) => v.id === c.id);
-    if (v?.team === "ally" && v.hp > 0 && !v.acted && n.origin === null)
+    if (
+      v?.team === "ally" &&
+      !v.pairedTo &&
+      v.hp > 0 &&
+      !v.acted &&
+      n.origin === null
+    )
       n.selected = v.id;
     return n;
   }
   if (c.type === "cancel" && n.phase === "player") {
     if (u && n.origin !== null) {
       u.pos = n.origin;
+      const back = partnerOf(n, u);
+      if (back) back.pos = u.pos;
       u.moved = false;
     }
     n.origin = null;
@@ -477,7 +655,63 @@ export function command(s: State, c: Command): State {
   ) {
     n.origin = u.pos;
     u.pos = c.pos;
+    const back = partnerOf(n, u);
+    if (back) back.pos = u.pos;
     u.moved = true;
+    return n;
+  }
+  if (
+    active &&
+    c.type === "pair" &&
+    pairTargets(n, u.id).some((v) => v.id === c.target)
+  ) {
+    const front = n.units.find((v) => v.id === c.target)!;
+    u.pairedTo = front.id;
+    u.pos = front.pos;
+    u.acted = true;
+    u.moved = true;
+    n.origin = null;
+    n.selected = front.acted ? null : front.id;
+    n.log.push(
+      `${u.name} pairs behind ${front.name}. Only ${front.name} takes field orders.`,
+    );
+    n.log = n.log.slice(-24);
+    return n;
+  }
+  if (active && c.type === "switch-pair") {
+    const back = partnerOf(n, u);
+    if (!back) return s;
+    back.pairedTo = null;
+    u.pairedTo = back.id;
+    back.acted = u.acted;
+    back.moved = true;
+    u.moved = true;
+    n.origin = null;
+    n.selected = back.id;
+    n.log.push(
+      `${back.name} takes the front. Switching spends the pair's movement.`,
+    );
+    n.log = n.log.slice(-24);
+    return n;
+  }
+  if (
+    active &&
+    c.type === "separate" &&
+    separationTiles(n, u.id).includes(c.pos)
+  ) {
+    const back = partnerOf(n, u)!;
+    back.pairedTo = null;
+    back.pos = c.pos;
+    back.acted = true;
+    back.moved = true;
+    u.acted = true;
+    u.moved = true;
+    n.origin = null;
+    n.selected = null;
+    n.log.push(
+      `${back.name} separates from ${u.name}. Both have finished this phase.`,
+    );
+    n.log = n.log.slice(-24);
     return n;
   }
   let consumed = false;
@@ -520,6 +754,7 @@ export function command(s: State, c: Command): State {
   }
   if (consumed && u) {
     u.acted = true;
+    if (actingPartner) actingPartner.acted = true;
     n.origin = null;
     n.selected = null;
     outcome(n);
@@ -532,7 +767,9 @@ export function command(s: State, c: Command): State {
   }
   if (c.type === "enemy" && n.phase === "enemy") {
     for (const e of n.units.filter((v) => v.team === "enemy" && v.hp > 0)) {
-      const living = n.units.filter((v) => v.team === "ally" && v.hp > 0);
+      const living = n.units.filter(
+        (v) => v.team === "ally" && v.hp > 0 && !v.pairedTo,
+      );
       if (!living.length) break;
       let targets = living.filter((a) => inRange(e, a));
       if (!targets.length) {
@@ -579,6 +816,12 @@ export function decodeSave(raw: string): State | null {
     const s: unknown = JSON.parse(raw);
     if (!s || typeof s !== "object") return null;
     const n = s as State;
+    if ((s as { version?: unknown }).version === 1) {
+      n.version = 2;
+      n.rng = 123456789;
+      for (const u of [...n.units, ...n.checkpoint.units]) u.pairedTo = null;
+      n.checkpoint.rng = n.rng;
+    }
     const integer = (v: unknown, min: number, max: number) =>
       typeof v === "number" && Number.isInteger(v) && v >= min && v <= max;
     const army = (v: unknown): v is Unit[] =>
@@ -589,6 +832,7 @@ export function decodeSave(raw: string): State | null {
         (u) =>
           u &&
           typeof u === "object" &&
+          (u.pairedTo === null || typeof u.pairedTo === "string") &&
           typeof u.id === "string" &&
           /^(mira|bram|sable|ione|enemy[0-3])$/.test(u.id) &&
           typeof u.name === "string" &&
@@ -621,7 +865,8 @@ export function decodeSave(raw: string): State | null {
           integer(v, 0, 10000),
       );
     if (
-      n.version !== 1 ||
+      n.version !== 2 ||
+      !integer(n.rng, 0, 4294967295) ||
       !integer(n.chapter, 0, 2) ||
       ![
         "title",
@@ -638,6 +883,7 @@ export function decodeSave(raw: string): State | null {
       !bonds(n.bonds) ||
       !n.checkpoint ||
       !army(n.checkpoint.units) ||
+      !integer(n.checkpoint.rng, 0, 4294967295) ||
       n.checkpoint.units.some((u) => u.team !== "ally") ||
       !bonds(n.checkpoint.bonds) ||
       typeof n.trained !== "boolean" ||
@@ -651,7 +897,11 @@ export function decodeSave(raw: string): State | null {
         n.selected === null ||
         n.units.some(
           (u) =>
-            u.id === n.selected && u.team === "ally" && u.hp > 0 && !u.acted,
+            u.id === n.selected &&
+            !u.pairedTo &&
+            u.team === "ally" &&
+            u.hp > 0 &&
+            !u.acted,
         )
       ) ||
       !(n.origin === null || integer(n.origin, 0, 55)) ||
@@ -688,12 +938,29 @@ export function decodeSave(raw: string): State | null {
       )
         return null;
     }
-    const living = n.units.filter((u) => u.hp > 0);
-    if (
-      new Set(living.map((u) => u.pos)).size !== living.length ||
-      living.some((u) => terrain(n, u.pos) === "~")
-    )
-      return null;
+    for (const army of [n.units, n.checkpoint.units]) {
+      for (const back of army.filter((v) => v.pairedTo)) {
+        const front = army.find((v) => v.id === back.pairedTo);
+        if (
+          !front ||
+          front === back ||
+          front.pairedTo ||
+          front.hp <= 0 ||
+          back.hp <= 0 ||
+          front.team !== "ally" ||
+          back.team !== "ally" ||
+          front.pos !== back.pos ||
+          army.filter((v) => v.pairedTo === front.id).length !== 1
+        )
+          return null;
+      }
+      const living = army.filter((v) => v.hp > 0 && !v.pairedTo);
+      if (
+        new Set(living.map((v) => v.pos)).size !== living.length ||
+        living.some((v) => terrain(n, v.pos) === "~")
+      )
+        return null;
+    }
     return n;
   } catch {
     return null;
