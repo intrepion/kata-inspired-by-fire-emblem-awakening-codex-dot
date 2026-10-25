@@ -53,3 +53,7 @@ The workflow applied Matt Pocock's [Grill with Docs](https://github.com/mattpoco
 ## Pair Up fidelity update
 
 Select an active keeper beside an unpaired ally to join their square. Switch changes the front and spends movement; Separate places the reserve on a legal adjacent cell and ends both actions. Forecasts name the partner and display seeded Dual Strike/Guard chances. Existing v1 saves migrate to the pair-aware v2 schema without resetting campaign progress. [Research, action rules and acceptance route](docs/PAIR_UP_FIDELITY.md).
+
+## Play online
+
+[Play the hosted game](https://intrepion.github.io/kata-inspired-by-fire-emblem-awakening-codex-dot/)
