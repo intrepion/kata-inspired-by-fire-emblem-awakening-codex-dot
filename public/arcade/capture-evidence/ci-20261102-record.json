@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "workflowCommit": "421465e5c484550de719323d28d7a0db33dc42e8",
+  "sourceCommit": "7a866d41e40202aff4cec1663d85f4daf79d4cc7",
+  "runId": "41410083415",
+  "url": "http://127.0.0.1:4234/",
+  "inputs": {
+    "index.html": "08cdc439f9d360fa0491e1854835d7b94e9c1599e0ec356272eb2acfdb5c0003",
+    "assets/index-DUuWEwlz.js": "d22880e031f0ca8a592a1273ff6eb16b68c9644cdd47f16878dab41dcda0e302",
+    "assets/index-QOjs7MtM.css": "3014644fc1e9b21c6e20db8b1cb7ad90afd49ada9c159c61ef9e1495b54c66e7"
+  },
+  "browser": "153.0.8010.12",
+  "viewport": {
+    "width": 1280,
+    "height": 1000
+  },
+  "screenshots": [
+    "hollow-01.png",
+    "hollow-02.png"
+  ]
+}

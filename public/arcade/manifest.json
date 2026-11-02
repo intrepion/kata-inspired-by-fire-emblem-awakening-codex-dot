@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "gameId": "kata-inspired-by-fire-emblem-awakening-codex-dot",
   "playUrl": "https://intrepion.github.io/kata-inspired-by-fire-emblem-awakening-codex-dot/",
   "screenshots": [
@@ -23,6 +23,46 @@
         "sourcePath": "evidence/final-forecast.jpg",
         "deployedBuild": null,
         "captureDate": null
+      }
+    },
+    {
+      "path": "arcade/screenshots/ci-20261102-01.jpg",
+      "sha256": "531d33f610add05e34c4ffadeaaf443e52a97620047bbf6dc5b3c14fda650dbe",
+      "alt": "Lanterns of the Hollow gameplay, view 1",
+      "provenance": {
+        "kind": "ci_gameplay_capture",
+        "sourcePath": "arcade/capture-evidence/ci-20261102-01.png",
+        "sourceSha256": "135d3e07a0b4c40fea99827402e1fb52f3f4a7b1250b24e6a634543f05b54b09",
+        "captureCommit": "7a866d41e40202aff4cec1663d85f4daf79d4cc7",
+        "workflowRunId": "41410083415",
+        "inputHashes": {
+          "index.html": "08cdc439f9d360fa0491e1854835d7b94e9c1599e0ec356272eb2acfdb5c0003",
+          "assets/index-DUuWEwlz.js": "d22880e031f0ca8a592a1273ff6eb16b68c9644cdd47f16878dab41dcda0e302",
+          "assets/index-QOjs7MtM.css": "3014644fc1e9b21c6e20db8b1cb7ad90afd49ada9c159c61ef9e1495b54c66e7"
+        },
+        "publishedFilesVerifiedAt": "2026-11-02T19:01:20Z",
+        "captureRecordPath": "arcade/capture-evidence/ci-20261102-record.json",
+        "captureRecordSha256": "0a580e3f2d462ca079dc8a211eabc4d3e017be38f9ac4e429aef5d165a2204fd"
+      }
+    },
+    {
+      "path": "arcade/screenshots/ci-20261102-02.jpg",
+      "sha256": "302efc062344e877b5a01036daa316c87af615f347e196f854a8c4cdbff97304",
+      "alt": "Lanterns of the Hollow gameplay, view 2",
+      "provenance": {
+        "kind": "ci_gameplay_capture",
+        "sourcePath": "arcade/capture-evidence/ci-20261102-02.png",
+        "sourceSha256": "bf479871c0d960f79999686d8c98ea3b674f63ab0e2a812c0164679f009ec525",
+        "captureCommit": "7a866d41e40202aff4cec1663d85f4daf79d4cc7",
+        "workflowRunId": "41410083415",
+        "inputHashes": {
+          "index.html": "08cdc439f9d360fa0491e1854835d7b94e9c1599e0ec356272eb2acfdb5c0003",
+          "assets/index-DUuWEwlz.js": "d22880e031f0ca8a592a1273ff6eb16b68c9644cdd47f16878dab41dcda0e302",
+          "assets/index-QOjs7MtM.css": "3014644fc1e9b21c6e20db8b1cb7ad90afd49ada9c159c61ef9e1495b54c66e7"
+        },
+        "publishedFilesVerifiedAt": "2026-11-02T19:01:20Z",
+        "captureRecordPath": "arcade/capture-evidence/ci-20261102-record.json",
+        "captureRecordSha256": "0a580e3f2d462ca079dc8a211eabc4d3e017be38f9ac4e429aef5d165a2204fd"
       }
     }
   ]
