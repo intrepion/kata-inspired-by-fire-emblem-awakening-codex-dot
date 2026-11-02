@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "gameId": "kata-inspired-by-fire-emblem-awakening-codex-dot",
+  "playUrl": "https://intrepion.github.io/kata-inspired-by-fire-emblem-awakening-codex-dot/",
+  "screenshots": [
+    {
+      "path": "arcade/screenshots/view-01.jpg",
+      "sha256": "99ac48dc125f2a5009f5875f15cabdb283c6b1080df4c591e416612a1298bae4",
+      "alt": "Gameplay capture 1",
+      "provenance": {
+        "kind": "existing_repository_capture",
+        "sourcePath": "docs/qa/fidelity-2026-10-15/dual-strike.jpg",
+        "deployedBuild": null,
+        "captureDate": null
+      }
+    },
+    {
+      "path": "arcade/screenshots/view-02.jpg",
+      "sha256": "71699dfcb4e104e0cf3abdfaf8539fac04e0176e062b5e6b93398f86764922ca",
+      "alt": "Gameplay capture 2",
+      "provenance": {
+        "kind": "existing_repository_capture",
+        "sourcePath": "evidence/final-forecast.jpg",
+        "deployedBuild": null,
+        "captureDate": null
+      }
+    }
+  ]
+}

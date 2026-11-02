@@ -57,3 +57,7 @@ Select an active keeper beside an unpaired ally to join their square. Switch cha
 ## Play online
 
 [Play the hosted game](https://intrepion.github.io/kata-inspired-by-fire-emblem-awakening-codex-dot/)
+
+## Arcade metadata
+
+See [docs/arcade-metadata.md](docs/arcade-metadata.md) for the game-owned manifest and screenshot provenance.
