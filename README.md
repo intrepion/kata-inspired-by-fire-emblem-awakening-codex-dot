@@ -31,7 +31,7 @@ Select an ally, select a blue movement square, then attack, heal, guard, wait or
 - **No permadeath.** Fallen allies sit out the battle and recover afterward. Mira falling or the chapter round limit expiring causes defeat. Retry restores the chapter-start army and bonds, including XP, so failed attempts cannot farm progression.
 - Autosaves after every order in this browser's local storage. Reload restores provisional movement and resumes an interrupted enemy phase once. New campaign asks before replacing the save.
 
-The enemy attack overlay shows attacks from current squares; enemies can move before striking. Base hit checks are certain, with no random misses or criticals. Pair Up adds explicitly forecast seeded chances for partner strikes and guards.
+The enemy reach overlay includes movement and attack range, weighted terrain and water. It allows other enemies to vacate their squares and can therefore overestimate reach; it does not predict the chosen target. Base hit checks are certain, with no random misses or criticals. Pair Up adds explicitly forecast seeded chances for partner strikes and guards.
 
 ## Verification
 

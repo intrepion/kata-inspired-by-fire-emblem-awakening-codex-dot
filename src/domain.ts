@@ -301,6 +301,17 @@ function walk(s: State, u: Unit, budget: number): number[] {
   }
   return [...costs.keys()].filter((p) => p !== u.pos);
 }
+/** Potential move-and-attack tiles. Other enemies may vacate their squares. */
+export function enemyThreat(s: State): number[] {
+ const threatened=new Set<number>();
+ for(const enemy of s.units.filter(u=>u.team==='enemy'&&u.hp>0&&!u.pairedTo)){
+  const open={...s,units:s.units.filter(u=>u.team!=='enemy'||u.id===enemy.id)};
+  for(const origin of [enemy.pos,...walk(open,enemy,enemy.move)]){
+   for(let p=0;p<56;p++)if(terrain(s,p)!=='~'&&inRange({...enemy,pos:origin},{...enemy,pos:p}))threatened.add(p);
+  }
+ }
+ return [...threatened].sort((a,b)=>a-b);
+}
 function recoveredKeepers(units: Unit[]): Unit[] {
   const deployment: Record<string, number> = {
     mira: 49,
