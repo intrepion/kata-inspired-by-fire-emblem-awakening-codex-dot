@@ -4,65 +4,43 @@
   "playUrl": "https://intrepion.github.io/kata-inspired-by-fire-emblem-awakening-codex-dot/",
   "screenshots": [
     {
-      "path": "arcade/screenshots/view-01.jpg",
-      "sha256": "99ac48dc125f2a5009f5875f15cabdb283c6b1080df4c591e416612a1298bae4",
-      "alt": "Gameplay capture 1",
-      "provenance": {
-        "kind": "existing_repository_capture",
-        "sourcePath": "docs/qa/fidelity-2026-10-15/dual-strike.jpg",
-        "deployedBuild": null,
-        "captureDate": null
-      }
-    },
-    {
-      "path": "arcade/screenshots/view-02.jpg",
-      "sha256": "71699dfcb4e104e0cf3abdfaf8539fac04e0176e062b5e6b93398f86764922ca",
-      "alt": "Gameplay capture 2",
-      "provenance": {
-        "kind": "existing_repository_capture",
-        "sourcePath": "evidence/final-forecast.jpg",
-        "deployedBuild": null,
-        "captureDate": null
-      }
-    },
-    {
-      "path": "arcade/screenshots/ci-20261102-01.jpg",
-      "sha256": "531d33f610add05e34c4ffadeaaf443e52a97620047bbf6dc5b3c14fda650dbe",
-      "alt": "Lanterns of the Hollow gameplay, view 1",
+      "path": "arcade/screenshots/review-20261103-01.jpg",
+      "sha256": "644bf9ca8876f2c7dc68f203e3eefba1306bd60ff26437b26f0ade21889ecaa8",
+      "alt": "Lanterns of the Hollow gameplay after the mechanics update, view 1",
       "provenance": {
         "kind": "ci_gameplay_capture",
-        "sourcePath": "arcade/capture-evidence/ci-20261102-01.png",
-        "sourceSha256": "135d3e07a0b4c40fea99827402e1fb52f3f4a7b1250b24e6a634543f05b54b09",
-        "captureCommit": "7a866d41e40202aff4cec1663d85f4daf79d4cc7",
-        "workflowRunId": "41410083415",
+        "sourcePath": "arcade/capture-evidence/review-20261103-01.png",
+        "sourceSha256": "8abd98aa1792c5ce8f7026a187271051e50d414727d7747cec36fb09a13da0a6",
+        "captureCommit": "a44e14024cef3ef4c1342ed59f000d9dd27edb9c",
+        "workflowRunId": "41675626672",
         "inputHashes": {
-          "index.html": "08cdc439f9d360fa0491e1854835d7b94e9c1599e0ec356272eb2acfdb5c0003",
-          "assets/index-DUuWEwlz.js": "d22880e031f0ca8a592a1273ff6eb16b68c9644cdd47f16878dab41dcda0e302",
-          "assets/index-QOjs7MtM.css": "3014644fc1e9b21c6e20db8b1cb7ad90afd49ada9c159c61ef9e1495b54c66e7"
+          "index.html": "44965a80663c4be1f8b433f348fb7b1f7657db92bafdf745a659b39c8774be95",
+          "assets/index-QOjs7MtM.css": "3014644fc1e9b21c6e20db8b1cb7ad90afd49ada9c159c61ef9e1495b54c66e7",
+          "assets/index-KQeVUDXN.js": "d7ddbf532bcf24bd97e908c7d9e78a15e2a59b9fa67c51c8147fcfaa2ad91ac9"
         },
-        "publishedFilesVerifiedAt": "2026-11-02T19:01:20Z",
-        "captureRecordPath": "arcade/capture-evidence/ci-20261102-record.json",
-        "captureRecordSha256": "0a580e3f2d462ca079dc8a211eabc4d3e017be38f9ac4e429aef5d165a2204fd"
+        "publishedFilesVerifiedAt": "2026-11-03T16:39:48Z",
+        "captureRecordPath": "arcade/capture-evidence/review-20261103-record.json",
+        "captureRecordSha256": "a95b28055703da286019c85f251c8c6597176c6b30851ee712345eb270da73e3"
       }
     },
     {
-      "path": "arcade/screenshots/ci-20261102-02.jpg",
-      "sha256": "302efc062344e877b5a01036daa316c87af615f347e196f854a8c4cdbff97304",
-      "alt": "Lanterns of the Hollow gameplay, view 2",
+      "path": "arcade/screenshots/review-20261103-02.jpg",
+      "sha256": "4f7b913eb9d2efddc57170dfc32da05254d0a5d2765b24134a831e3e441b18bc",
+      "alt": "Lanterns of the Hollow gameplay after the mechanics update, view 2",
       "provenance": {
         "kind": "ci_gameplay_capture",
-        "sourcePath": "arcade/capture-evidence/ci-20261102-02.png",
-        "sourceSha256": "bf479871c0d960f79999686d8c98ea3b674f63ab0e2a812c0164679f009ec525",
-        "captureCommit": "7a866d41e40202aff4cec1663d85f4daf79d4cc7",
-        "workflowRunId": "41410083415",
+        "sourcePath": "arcade/capture-evidence/review-20261103-02.png",
+        "sourceSha256": "09cae2823f42331c4a0b55269f48163ff95adfd976eca3db77aeeb428e4ca49b",
+        "captureCommit": "a44e14024cef3ef4c1342ed59f000d9dd27edb9c",
+        "workflowRunId": "41675626672",
         "inputHashes": {
-          "index.html": "08cdc439f9d360fa0491e1854835d7b94e9c1599e0ec356272eb2acfdb5c0003",
-          "assets/index-DUuWEwlz.js": "d22880e031f0ca8a592a1273ff6eb16b68c9644cdd47f16878dab41dcda0e302",
-          "assets/index-QOjs7MtM.css": "3014644fc1e9b21c6e20db8b1cb7ad90afd49ada9c159c61ef9e1495b54c66e7"
+          "index.html": "44965a80663c4be1f8b433f348fb7b1f7657db92bafdf745a659b39c8774be95",
+          "assets/index-QOjs7MtM.css": "3014644fc1e9b21c6e20db8b1cb7ad90afd49ada9c159c61ef9e1495b54c66e7",
+          "assets/index-KQeVUDXN.js": "d7ddbf532bcf24bd97e908c7d9e78a15e2a59b9fa67c51c8147fcfaa2ad91ac9"
         },
-        "publishedFilesVerifiedAt": "2026-11-02T19:01:20Z",
-        "captureRecordPath": "arcade/capture-evidence/ci-20261102-record.json",
-        "captureRecordSha256": "0a580e3f2d462ca079dc8a211eabc4d3e017be38f9ac4e429aef5d165a2204fd"
+        "publishedFilesVerifiedAt": "2026-11-03T16:39:48Z",
+        "captureRecordPath": "arcade/capture-evidence/review-20261103-record.json",
+        "captureRecordSha256": "a95b28055703da286019c85f251c8c6597176c6b30851ee712345eb270da73e3"
       }
     }
   ]
