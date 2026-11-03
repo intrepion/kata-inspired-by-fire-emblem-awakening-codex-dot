@@ -1,5 +1,7 @@
 # Lanterns of the Hollow
 
+[Kata Arcade](https://intrepion.github.io/)
+
 An original turn-based tactical RPG about four friends carrying stolen names home through a fogbound valley. Inspired by the tactical formation and ally-support ideas of Fire Emblem: Awakening; every character, story, map, illustration and musical phrase here is original.
 
 A complete compact campaign: rout the Ash Orchard, rekindle two watchfires, then defeat the Bell Warden and hear the ending. Four distinct roles, weighted grid movement, terrain defense, a weapon triangle, base damage forecasts, adjacent bond support, deterministic levels and between-battle training create the choices.
